@@ -1,0 +1,42 @@
+name: Release
+on:
+  push:
+    branches:
+      - main
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'lts/*'
+
+      - name: Install dependencies
+        run: yarn
+
+      - name: Build projects
+        run: yarn build
+
+      - name: Configure GIT credentials
+        uses: OleksiyRudenko/gha-git-credentials@v2-latest
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: 'Configure: NPM'
+        run: |
+          npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx lerna publish --conventional-graduate --include-merged-tags --yes
